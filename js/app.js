@@ -1,4 +1,4 @@
-class PieOffice {
+class PieOfficePro {
     constructor() {
         this.editor = document.getElementById('editor');
         this.docTitle = document.getElementById('docTitle');
@@ -6,10 +6,13 @@ class PieOffice {
         this.statusText = document.getElementById('statusText');
         this.wordCount = document.getElementById('wordCount');
         this.charCount = document.getElementById('charCount');
+        this.readTime = document.getElementById('readTime');
+        this.pageCount = document.getElementById('pageCount');
         this.saveModal = document.getElementById('saveModal');
         this.fileInput = document.getElementById('fileInput');
         this.imageInput = document.getElementById('imageInput');
-        
+        this.zoomValue = document.getElementById('zoomValue');
+        this.currentZoom = 100;
         this.isDirty = false;
         this.autoSaveTimer = null;
         
@@ -17,81 +20,111 @@ class PieOffice {
     }
 
     init() {
+        this.loadTheme();
         this.bindToolbar();
         this.bindKeyboard();
         this.bindEvents();
+        this.bindDragDrop();
         this.loadFromStorage();
         this.updateCounts();
         this.updateToolbarState();
     }
 
+    loadTheme() {
+        const theme = localStorage.getItem('pieOffice_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        this.updateThemeIcon(theme);
+    }
+
+    updateThemeIcon(theme) {
+        const icon = document.querySelector('#themeToggle svg');
+        if (theme === 'dark') {
+            icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        } else {
+            icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        }
+    }
+
+    toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('pieOffice_theme', next);
+        this.updateThemeIcon(next);
+    }
+
     bindToolbar() {
         document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
-            btn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-            });
-            btn.addEventListener('click', (e) => {
-                const cmd = btn.dataset.cmd;
-                this.execCommand(cmd);
-            });
+            btn.addEventListener('mousedown', (e) => e.preventDefault());
+            btn.addEventListener('click', () => this.execCommand(btn.dataset.cmd));
         });
 
-        document.getElementById('fontFamily').addEventListener('change', (e) => {
-            this.execCommand('fontName', e.target.value);
-        });
-
-        document.getElementById('fontSize').addEventListener('change', (e) => {
-            this.execCommand('fontSize', e.target.value);
-        });
-
-        document.getElementById('formatBlock').addEventListener('change', (e) => {
-            this.execCommand('formatBlock', `<${e.target.value}>`);
-        });
-
-        document.getElementById('textColor').addEventListener('input', (e) => {
-            this.execCommand('foreColor', e.target.value);
-        });
-
-        document.getElementById('bgColor').addEventListener('input', (e) => {
-            this.execCommand('hiliteColor', e.target.value);
-        });
+        document.getElementById('fontFamily').addEventListener('change', (e) => this.execCommand('fontName', e.target.value));
+        document.getElementById('fontSize').addEventListener('change', (e) => this.execCommand('fontSize', e.target.value));
+        document.getElementById('formatBlock').addEventListener('change', (e) => this.execCommand('formatBlock', `<${e.target.value}>`));
+        document.getElementById('textColor').addEventListener('input', (e) => this.execCommand('foreColor', e.target.value));
+        document.getElementById('bgColor').addEventListener('input', (e) => this.execCommand('hiliteColor', e.target.value));
 
         document.querySelector('[data-cmd="createLink"]').addEventListener('click', () => {
             const url = prompt('Введите URL:', 'https://');
-            if (url) {
-                this.execCommand('createLink', url);
-            }
+            if (url) this.execCommand('createLink', url);
         });
 
-        document.getElementById('btnInsertImage').addEventListener('click', () => {
-            this.imageInput.click();
-        });
+        document.getElementById('btnInsertImage').addEventListener('click', () => this.imageInput.click());
+        document.getElementById('btnInsertTable').addEventListener('click', () => this.insertTable());
+        document.getElementById('btnInsertHR').addEventListener('click', () => this.execCommand('insertHTML', '<hr>'));
+        document.getElementById('btnSuperscript').addEventListener('click', () => this.execCommand('superscript'));
+        document.getElementById('btnSubscript').addEventListener('click', () => this.execCommand('subscript'));
 
-        document.getElementById('btnInsertTable').addEventListener('click', () => {
-            this.insertTable();
-        });
-
-        document.getElementById('btnSave').addEventListener('click', () => {
-            this.saveModal.classList.add('active');
-        });
-
-        document.getElementById('closeSaveModal').addEventListener('click', () => {
-            this.saveModal.classList.remove('active');
-        });
-
-        this.saveModal.addEventListener('click', (e) => {
-            if (e.target === this.saveModal) {
-                this.saveModal.classList.remove('active');
-            }
-        });
+        document.getElementById('btnSave').addEventListener('click', () => this.saveModal.classList.add('active'));
+        document.getElementById('closeSaveModal').addEventListener('click', () => this.saveModal.classList.remove('active'));
+        this.saveModal.addEventListener('click', (e) => { if (e.target === this.saveModal) this.saveModal.classList.remove('active'); });
 
         document.getElementById('saveHTML').addEventListener('click', () => this.saveAsHTML());
+        document.getElementById('saveDOC').addEventListener('click', () => this.saveAsDOC());
         document.getElementById('saveTXT').addEventListener('click', () => this.saveAsTXT());
+        document.getElementById('saveMD').addEventListener('click', () => this.saveAsMarkdown());
         document.getElementById('savePrint').addEventListener('click', () => this.printDocument());
+        document.getElementById('saveVersion').addEventListener('click', () => this.saveVersion());
 
-        document.getElementById('btnOpen').addEventListener('click', () => {
-            this.fileInput.click();
+        document.getElementById('btnOpen').addEventListener('click', () => this.fileInput.click());
+        document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+        document.getElementById('btnFullscreen').addEventListener('click', () => this.toggleFullscreen());
+        document.getElementById('btnFocus').addEventListener('click', () => document.body.classList.toggle('focus-mode'));
+
+        document.getElementById('btnSearch').addEventListener('click', () => {
+            document.getElementById('searchModal').classList.add('active');
+            document.getElementById('searchInput').focus();
         });
+        document.getElementById('closeSearchModal').addEventListener('click', () => document.getElementById('searchModal').classList.remove('active'));
+        document.getElementById('searchModal').addEventListener('click', (e) => { if (e.target.id === 'searchModal') document.getElementById('searchModal').classList.remove('active'); });
+        document.getElementById('searchNext').addEventListener('click', () => this.findNext());
+        document.getElementById('searchPrev').addEventListener('click', () => this.findPrev());
+        document.getElementById('replaceBtn').addEventListener('click', () => this.replaceText());
+        document.getElementById('replaceAllBtn').addEventListener('click', () => this.replaceAll());
+
+        document.getElementById('btnTOC').addEventListener('click', () => this.showTOC());
+        document.getElementById('closeTocModal').addEventListener('click', () => document.getElementById('tocModal').classList.remove('active'));
+        document.getElementById('tocModal').addEventListener('click', (e) => { if (e.target.id === 'tocModal') document.getElementById('tocModal').classList.remove('active'); });
+
+        document.getElementById('btnVersions').addEventListener('click', () => this.showVersions());
+        document.getElementById('closeVersionModal').addEventListener('click', () => document.getElementById('versionModal').classList.remove('active'));
+        document.getElementById('versionModal').addEventListener('click', (e) => { if (e.target.id === 'versionModal') document.getElementById('versionModal').classList.remove('active'); });
+        document.getElementById('clearVersions').addEventListener('click', () => {
+            if (confirm('Очистить всю историю версий?')) {
+                localStorage.removeItem('pieOffice_versions');
+                this.showVersions();
+            }
+        });
+
+        document.getElementById('zoomIn').addEventListener('click', () => { this.currentZoom = Math.min(200, this.currentZoom + 10); this.applyZoom(); });
+        document.getElementById('zoomOut').addEventListener('click', () => { this.currentZoom = Math.max(50, this.currentZoom - 10); this.applyZoom(); });
+    }
+
+    applyZoom() {
+        this.editor.style.transform = `scale(${this.currentZoom / 100})`;
+        this.editor.style.transformOrigin = 'top center';
+        this.zoomValue.textContent = `${this.currentZoom}%`;
     }
 
     execCommand(cmd, value = null) {
@@ -103,13 +136,8 @@ class PieOffice {
 
     updateToolbarState() {
         document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
-            const cmd = btn.dataset.cmd;
             try {
-                if (document.queryCommandState(cmd)) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
+                btn.classList.toggle('active', document.queryCommandState(btn.dataset.cmd));
             } catch(e) {}
         });
     }
@@ -118,211 +146,196 @@ class PieOffice {
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 switch(e.key.toLowerCase()) {
-                    case 's':
-                        e.preventDefault();
-                        this.saveToStorage();
-                        this.saveModal.classList.add('active');
-                        break;
-                    case 'b':
-                        e.preventDefault();
-                        this.execCommand('bold');
-                        break;
-                    case 'i':
-                        e.preventDefault();
-                        this.execCommand('italic');
-                        break;
-                    case 'u':
-                        e.preventDefault();
-                        this.execCommand('underline');
-                        break;
+                    case 's': e.preventDefault(); this.saveToStorage(); this.saveModal.classList.add('active'); break;
+                    case 'b': e.preventDefault(); this.execCommand('bold'); break;
+                    case 'i': e.preventDefault(); this.execCommand('italic'); break;
+                    case 'u': e.preventDefault(); this.execCommand('underline'); break;
+                    case 'f': e.preventDefault(); document.getElementById('searchModal').classList.add('active'); document.getElementById('searchInput').focus(); break;
                 }
+            }
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
             }
         });
     }
 
     bindEvents() {
-        this.editor.addEventListener('input', () => {
-            this.markDirty();
-            this.updateCounts();
-            this.scheduleAutoSave();
-        });
-
+        this.editor.addEventListener('input', () => { this.markDirty(); this.updateCounts(); this.scheduleAutoSave(); });
         this.editor.addEventListener('mouseup', () => this.updateToolbarState());
         this.editor.addEventListener('keyup', () => this.updateToolbarState());
-
         this.fileInput.addEventListener('change', (e) => this.handleFileOpen(e));
         this.imageInput.addEventListener('change', (e) => this.handleImageInsert(e));
-
         this.docTitle.addEventListener('input', () => this.markDirty());
+        window.addEventListener('beforeunload', (e) => { if (this.isDirty) { e.preventDefault(); e.returnValue = ''; } });
+    }
 
-        window.addEventListener('beforeunload', (e) => {
-            if (this.isDirty) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
+    bindDragDrop() {
+        const dropZone = document.getElementById('dropZone');
+        document.addEventListener('dragenter', (e) => { e.preventDefault(); if (e.dataTransfer.types.includes('Files')) dropZone.classList.add('active'); });
+        dropZone.addEventListener('dragleave', (e) => { if (e.target === dropZone) dropZone.classList.remove('active'); });
+        dropZone.addEventListener('dragover', (e) => e.preventDefault());
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropZone.classList.remove('active');
+            for (let file of e.dataTransfer.files) { if (file.type.startsWith('image/')) this.handleImageFile(file); }
         });
+    }
+
+    handleImageFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => this.execCommand('insertHTML', `<img src="${e.target.result}" alt="image" style="max-width:100%;">`);
+        reader.readAsDataURL(file);
     }
 
     handleFileOpen(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
+        const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
-            const content = event.target.result;
-            
-            if (file.name.endsWith('.txt')) {
-                this.editor.innerText = content;
-            } else {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(content, 'text/html');
-                this.editor.innerHTML = doc.body.innerHTML || content;
+            if (file.name.endsWith('.txt')) this.editor.innerText = event.target.result;
+            else {
+                const doc = new DOMParser().parseFromString(event.target.result, 'text/html');
+                this.editor.innerHTML = doc.body.innerHTML || event.target.result;
             }
-
             this.docTitle.value = file.name.replace(/\.[^.]+$/, '');
-            this.markDirty();
-            this.saveToStorage();
+            this.markDirty(); this.saveToStorage();
         };
-        reader.readAsText(file);
-        this.fileInput.value = '';
+        reader.readAsText(file); this.fileInput.value = '';
     }
 
-    handleImageInsert(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = `<img src="${event.target.result}" alt="image" style="max-width:100%;">`;
-            this.execCommand('insertHTML', img);
-        };
-        reader.readAsDataURL(file);
-        this.imageInput.value = '';
-    }
+    handleImageInsert(e) { if (e.target.files[0]) this.handleImageFile(e.target.files[0]); this.imageInput.value = ''; }
 
     insertTable() {
-        const rows = prompt('Количество строк:', '3');
-        const cols = prompt('Количество столбцов:', '3');
-        
+        const rows = prompt('Количество строк:', '3'); const cols = prompt('Количество столбцов:', '3');
         if (!rows || !cols) return;
-        
         let table = '<table>';
         for (let i = 0; i < parseInt(rows); i++) {
             table += '<tr>';
-            for (let j = 0; j < parseInt(cols); j++) {
-                table += i === 0 ? '<th>&nbsp;</th>' : '<td>&nbsp;</td>';
-            }
+            for (let j = 0; j < parseInt(cols); j++) table += i === 0 ? '<th>&nbsp;</th>' : '<td>&nbsp;</td>';
             table += '</tr>';
         }
-        table += '</table><p><br></p>';
-        
-        this.execCommand('insertHTML', table);
+        this.execCommand('insertHTML', table + '</table><p><br></p>');
+    }
+
+    findNext() { const s = document.getElementById('searchInput').value; if (s) window.find(s, false, false, true); }
+    findPrev() { const s = document.getElementById('searchInput').value; if (s) window.find(s, false, true, true); }
+    replaceText() {
+        const s = document.getElementById('searchInput').value, r = document.getElementById('replaceInput').value;
+        if (s && window.find(s)) { document.execCommand('insertText', false, r); this.markDirty(); }
+    }
+    replaceAll() {
+        const s = document.getElementById('searchInput').value, r = document.getElementById('replaceInput').value;
+        if (!s) return;
+        const caseS = document.getElementById('searchCase').checked, whole = document.getElementById('searchWhole').checked;
+        let regex = new RegExp(whole ? `\\b${s}\\b` : s, caseS ? 'g' : 'gi');
+        this.editor.innerHTML = this.editor.innerHTML.replace(regex, r);
+        this.markDirty();
+    }
+
+    showTOC() {
+        const headings = this.editor.querySelectorAll('h1, h2, h3, h4');
+        const tocList = document.getElementById('tocList'); tocList.innerHTML = '';
+        headings.forEach(h => {
+            const li = document.createElement('li');
+            li.className = `toc-item toc-item-${h.tagName.toLowerCase()}`;
+            li.textContent = h.textContent;
+            li.onclick = () => { h.scrollIntoView({ behavior: 'smooth' }); document.getElementById('tocModal').classList.remove('active'); };
+            tocList.appendChild(li);
+        });
+        document.getElementById('tocModal').classList.add('active');
+    }
+
+    saveVersion() {
+        const versions = JSON.parse(localStorage.getItem('pieOffice_versions') || '[]');
+        versions.unshift({ id: Date.now(), title: this.docTitle.value, content: this.editor.innerHTML, date: new Date().toISOString() });
+        if (versions.length > 10) versions.pop();
+        localStorage.setItem('pieOffice_versions', JSON.stringify(versions));
+        this.saveModal.classList.remove('active'); alert('Версия сохранена!');
+    }
+
+    showVersions() {
+        const versions = JSON.parse(localStorage.getItem('pieOffice_versions') || '[]');
+        const list = document.getElementById('versionList'); list.innerHTML = '';
+        if (!versions.length) list.innerHTML = '<p style="text-align:center;color:var(--text-secondary)">История пуста</p>';
+        else versions.forEach(v => {
+            const item = document.createElement('div'); item.className = 'version-item';
+            item.innerHTML = `<div class="version-info"><div class="version-title">${v.title}</div><div class="version-date">${new Date(v.date).toLocaleString('ru-RU')}</div></div><div class="version-actions"><button class="version-btn" onclick="app.restoreVersion(${v.id})">Восстановить</button><button class="version-btn" onclick="app.deleteVersion(${v.id})">Удалить</button></div>`;
+            list.appendChild(item);
+        });
+        document.getElementById('versionModal').classList.add('active');
+    }
+
+    restoreVersion(id) {
+        if (!confirm('Восстановить эту версию?')) return;
+        const v = JSON.parse(localStorage.getItem('pieOffice_versions') || '[]').find(x => x.id === id);
+        if (v) { this.editor.innerHTML = v.content; this.docTitle.value = v.title; this.markDirty(); this.saveToStorage(); document.getElementById('versionModal').classList.remove('active'); }
+    }
+
+    deleteVersion(id) {
+        if (!confirm('Удалить версию?')) return;
+        localStorage.setItem('pieOffice_versions', JSON.stringify(JSON.parse(localStorage.getItem('pieOffice_versions') || '[]').filter(v => v.id !== id)));
+        this.showVersions();
+    }
+
+    toggleFullscreen() {
+        if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); document.body.classList.add('fullscreen'); }
+        else { document.exitFullscreen(); document.body.classList.remove('fullscreen'); }
     }
 
     saveAsHTML() {
-        const title = this.docTitle.value || 'document';
-        const html = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>${title}</title>
-    <style>
-        body { font-family: 'Inter', Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.7; }
-        h1 { font-size: 2em; margin-bottom: 0.5em; }
-        h2 { font-size: 1.5em; margin-bottom: 0.5em; }
-        blockquote { border-left: 4px solid #4f46e5; padding: 12px 20px; margin: 1em 0; background: #eef2ff; }
-        table { width: 100%; border-collapse: collapse; margin: 1em 0; }
-        table td, table th { border: 1px solid #e2e8f0; padding: 8px 12px; }
-        table th { background: #eef2ff; }
-        img { max-width: 100%; }
-    </style>
-</head>
-<body>
-${this.editor.innerHTML}
-</body>
-</html>`;
-        this.downloadFile(`${title}.html`, html, 'text/html');
-        this.saveModal.classList.remove('active');
-        this.markClean();
+        const t = this.docTitle.value || 'document';
+        const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:'Inter',Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.7}h1{font-size:2em}h2{font-size:1.5em}blockquote{border-left:4px solid #4f46e5;padding:12px 20px;margin:1em 0;background:#eef2ff}table{border-collapse:collapse}td,th{border:1px solid #e2e8f0;padding:8px 12px}th{background:#eef2ff}img{max-width:100%}hr{border:none;border-top:2px solid #e2e8f0;margin:2em 0}</style></head><body>${this.editor.innerHTML}</body></html>`;
+        this.downloadFile(`${t}.html`, html, 'text/html'); this.saveModal.classList.remove('active'); this.markClean();
+    }
+
+    saveAsDOC() {
+        const t = this.docTitle.value || 'document';
+        const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:Calibri,sans-serif}table{border-collapse:collapse}td,th{border:1px solid #000;padding:5px}</style></head><body>${this.editor.innerHTML}</body></html>`;
+        this.downloadFile(`${t}.doc`, html, 'application/msword'); this.saveModal.classList.remove('active'); this.markClean();
     }
 
     saveAsTXT() {
-        const title = this.docTitle.value || 'document';
-        const text = this.editor.innerText;
-        this.downloadFile(`${title}.txt`, text, 'text/plain');
-        this.saveModal.classList.remove('active');
-        this.markClean();
+        const t = this.docTitle.value || 'document';
+        const blob = new Blob(['\uFEFF' + this.editor.innerText], { type: 'text/plain;charset=utf-8' });
+        this.downloadFile(`${t}.txt`, blob, 'text/plain'); this.saveModal.classList.remove('active'); this.markClean();
     }
 
-    printDocument() {
-        this.saveModal.classList.remove('active');
-        window.print();
+    saveAsMarkdown() {
+        const t = this.docTitle.value || 'document';
+        this.downloadFile(`${t}.md`, this.htmlToMarkdown(this.editor.innerHTML), 'text/markdown');
+        this.saveModal.classList.remove('active'); this.markClean();
     }
+
+    htmlToMarkdown(html) {
+        let md = html;
+        md = md.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n').replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n').replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n').replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n\n');
+        md = md.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**').replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*').replace(/<u[^>]*>(.*?)<\/u>/gi, '__$1__');
+        md = md.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (_, c) => c.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n'));
+        md = md.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_, c) => { let i=1; return c.replace(/<li[^>]*>(.*?)<\/li>/gi, (_, t) => `${i++}. ${t}\n`); });
+        md = md.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)').replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*\/?>/gi, '![$2]($1)');
+        md = md.replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1\n\n').replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, '```\n$1\n```\n\n').replace(/<hr[^>]*\/?>/gi, '---\n\n').replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
+        return md.replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    printDocument() { this.saveModal.classList.remove('active'); window.print(); }
 
     downloadFile(filename, content, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 
-    saveToStorage() {
-        const data = {
-            title: this.docTitle.value,
-            content: this.editor.innerHTML,
-            savedAt: new Date().toISOString()
-        };
-        localStorage.setItem('pieOffice_document', JSON.stringify(data));
-    }
-
+    saveToStorage() { localStorage.setItem('pieOffice_document', JSON.stringify({ title: this.docTitle.value, content: this.editor.innerHTML, savedAt: new Date().toISOString() })); }
     loadFromStorage() {
-        const saved = localStorage.getItem('pieOffice_document');
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                this.docTitle.value = data.title || 'Без названия';
-                this.editor.innerHTML = data.content || this.editor.innerHTML;
-            } catch(e) {
-                console.warn('Failed to load saved document:', e);
-            }
-        }
+        const s = localStorage.getItem('pieOffice_document');
+        if (s) { try { const d = JSON.parse(s); this.docTitle.value = d.title || 'Без названия'; this.editor.innerHTML = d.content || this.editor.innerHTML; } catch(e) {} }
     }
-
-    scheduleAutoSave() {
-        clearTimeout(this.autoSaveTimer);
-        this.autoSaveTimer = setTimeout(() => {
-            this.saveToStorage();
-        }, 3000);
-    }
-
-    markDirty() {
-        this.isDirty = true;
-        this.statusDot.className = 'status-dot unsaved';
-        this.statusText.textContent = 'Не сохранено';
-    }
-
-    markClean() {
-        this.isDirty = false;
-        this.statusDot.className = 'status-dot saved';
-        this.statusText.textContent = 'Сохранено';
-        this.saveToStorage();
-    }
-
+    scheduleAutoSave() { clearTimeout(this.autoSaveTimer); this.autoSaveTimer = setTimeout(() => this.saveToStorage(), 3000); }
+    markDirty() { this.isDirty = true; this.statusDot.className = 'status-dot unsaved'; this.statusText.textContent = 'Не сохранено'; }
+    markClean() { this.isDirty = false; this.statusDot.className = 'status-dot saved'; this.statusText.textContent = 'Сохранено'; this.saveToStorage(); }
     updateCounts() {
-        const text = this.editor.innerText.trim();
-        const words = text ? text.split(/\s+/).length : 0;
-        const chars = text.length;
-        
-        this.wordCount.textContent = `Слов: ${words}`;
-        this.charCount.textContent = `Символов: ${chars}`;
+        const t = this.editor.innerText.trim(), w = t ? t.split(/\s+/).length : 0, c = t.length;
+        this.wordCount.textContent = `Слов: ${w}`; this.charCount.textContent = `Символов: ${c}`;
+        this.readTime.textContent = `Время чтения: ${Math.ceil(w / 200)} мин`; this.pageCount.textContent = `Страниц: ~${Math.ceil(w / 250)}`;
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new PieOffice();
-});
+document.addEventListener('DOMContentLoaded', () => { window.app = new PieOfficePro(); });
