@@ -1,4 +1,4 @@
-class PieOfficePro {
+class PieOffice {
     constructor() {
         this.editor = document.getElementById('editor');
         this.docTitle = document.getElementById('docTitle');
@@ -338,4 +338,4 @@ class PieOfficePro {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { window.app = new PieOfficePro(); });
+document.addEventListener('DOMContentLoaded', () => { window.app = new PieOffice(); });
