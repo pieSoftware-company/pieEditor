@@ -92,7 +92,6 @@ body {
 .toolbar-group { display: flex; align-items: center; gap: 2px; }
 .toolbar-divider { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
 
-/* === КНОПКИ ТУЛБАРА === */
 .toolbar-btn {
     display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
     border: 1px solid transparent; background: transparent; border-radius: var(--radius-sm);
@@ -104,12 +103,10 @@ body {
     background: var(--primary-light);
     color: var(--primary);
 }
-/* Эффект нажатия — кнопка "вдавливается" */
 .toolbar-btn:active:not(.active) {
     transform: scale(0.9);
     background: var(--primary-light);
 }
-/* Активное состояние — кнопка "вжата" (toggle-команды) */
 .toolbar-btn.active {
     background: var(--primary);
     color: white;
@@ -309,7 +306,214 @@ body.fullscreen .page { max-width: none; min-height: 100vh; padding: 40px; }
     .save-options { grid-template-columns: 1fr; }
 }
 @media print {
-    .header, .toolbar, .footer, .modal-overlay, .drop-zone { display: none !important; }
+    .header, .toolbar, .footer, .modal-overlay, .drop-zone, .tour-overlay { display: none !important; }
     .editor-container { padding: 0; overflow: visible; }
     .page { box-shadow: none; padding: 0; max-width: none; }
+}
+
+/* ========================================= */
+/*          ИНТЕРАКТИВНЫЙ ТУР                */
+/* ========================================= */
+
+.tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tour-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Подсветка элемента — тёмный фон с "дыркой" */
+.tour-highlight {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.6);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+    border-radius: 6px;
+    z-index: 1;
+}
+
+.tour-highlight::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    animation: tourPulse 2s infinite;
+    pointer-events: none;
+}
+
+@keyframes tourPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+}
+
+/* Тултип с описанием */
+.tour-tooltip {
+    position: absolute;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    padding: 20px;
+    width: 340px;
+    max-width: calc(100vw - 40px);
+    z-index: 2;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border);
+}
+
+.tour-overlay.active .tour-tooltip {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tour-tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tour-step-counter {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.tour-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s;
+    line-height: 1;
+}
+
+.tour-close:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+}
+
+.tour-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.tour-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.tour-progress {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.tour-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+}
+
+.tour-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.tour-nav {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.tour-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.tour-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--primary);
+}
+
+.tour-btn-next {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.tour-btn-next:hover {
+    background: var(--primary-hover);
+    color: white;
+}
+
+.tour-btn-skip {
+    color: var(--text-secondary);
+    border: none;
+    background: transparent;
+}
+
+.tour-btn-skip:hover {
+    color: var(--text);
+    background: var(--surface-hover);
+}
+
+.tour-btn-prev:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Финальный шаг */
+.tour-tooltip.final .tour-title {
+    color: var(--primary);
+}
+
+.tour-tooltip.final .tour-btn-next {
+    background: #22c55e;
+    border-color: #22c55e;
+}
+
+.tour-tooltip.final .tour-btn-next:hover {
+    background: #16a34a;
 }
