@@ -54,6 +54,7 @@ class PieEditor {
     }
 
     bindToolbar() {
+        // Все кнопки с data-cmd работают через единый обработчик
         document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
             btn.addEventListener('mousedown', (e) => e.preventDefault());
             btn.addEventListener('click', () => this.execCommand(btn.dataset.cmd));
@@ -73,8 +74,6 @@ class PieEditor {
         document.getElementById('btnInsertImage').addEventListener('click', () => this.imageInput.click());
         document.getElementById('btnInsertTable').addEventListener('click', () => this.insertTable());
         document.getElementById('btnInsertHR').addEventListener('click', () => this.execCommand('insertHTML', '<hr>'));
-        document.getElementById('btnSuperscript').addEventListener('click', () => this.execCommand('superscript'));
-        document.getElementById('btnSubscript').addEventListener('click', () => this.execCommand('subscript'));
 
         document.getElementById('btnSave').addEventListener('click', () => this.saveModal.classList.add('active'));
         document.getElementById('closeSaveModal').addEventListener('click', () => this.saveModal.classList.remove('active'));
@@ -136,8 +135,14 @@ class PieEditor {
 
     updateToolbarState() {
         document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
+            const cmd = btn.dataset.cmd;
+            // Не показываем активное состояние для action-кнопок (однократные действия)
+            if (btn.hasAttribute('data-action')) {
+                btn.classList.remove('active');
+                return;
+            }
             try {
-                btn.classList.toggle('active', document.queryCommandState(btn.dataset.cmd));
+                btn.classList.toggle('active', document.queryCommandState(cmd));
             } catch(e) {}
         });
     }
