@@ -1,3 +1,241 @@
+class Tour {
+    constructor() {
+        this.overlay = document.getElementById('tourOverlay');
+        this.highlight = document.getElementById('tourHighlight');
+        this.tooltip = document.getElementById('tourTooltip');
+        this.title = document.getElementById('tourTitle');
+        this.description = document.getElementById('tourDescription');
+        this.stepCounter = document.getElementById('tourStepCounter');
+        this.progressBar = document.getElementById('tourProgressBar');
+        this.btnPrev = document.getElementById('tourPrev');
+        this.btnNext = document.getElementById('tourNext');
+        this.btnSkip = document.getElementById('tourSkip');
+        this.btnClose = document.getElementById('tourClose');
+
+        this.currentStep = 0;
+        this.isActive = false;
+        this.resizeTimer = null;
+
+        // Шаги тура
+        this.steps = [
+            {
+                target: '.logo',
+                title: '🥧 Добро пожаловать в pieEditor!',
+                description: 'Это ваш мощный онлайн-редактор документов. Сейчас я покажу как им пользоваться.',
+                position: 'bottom'
+            },
+            {
+                target: '.document-title',
+                title: '📝 Название документа',
+                description: 'Кликните сюда и переименуйте документ. Название используется при сохранении файлов.',
+                position: 'bottom'
+            },
+            {
+                target: '.toolbar-group:nth-child(7)',
+                title: '🎨 Форматирование текста',
+                description: 'Сделайте текст жирным, курсивом, подчёркнутым. Также доступны цвета и выравнивание. Кнопки подсвечиваются, когда формат активен.',
+                position: 'bottom'
+            },
+            {
+                target: '[data-cmd="insertOrderedList"]',
+                title: '📋 Списки и блоки',
+                description: 'Создавайте маркированные и нумерованные списки, управляйте отступами, добавляйте цитаты и блоки кода.',
+                position: 'bottom'
+            },
+            {
+                target: '#btnInsertTable',
+                title: '🖼️ Вставка элементов',
+                description: 'Добавляйте таблицы, изображения, ссылки и горизонтальные линии. Изображения можно просто перетащить в редактор!',
+                position: 'bottom'
+            },
+            {
+                target: '#btnSearch',
+                title: '🔍 Поиск и оглавление',
+                description: 'Быстрый поиск и замена текста (Ctrl+F). Автогенерация оглавления из заголовков для удобной навигации.',
+                position: 'bottom'
+            },
+            {
+                target: '.page',
+                title: '📄 Рабочая область',
+                description: 'Здесь вы редактируете документ. Всё сохраняется автоматически в браузере. Можно масштабировать через +/- в тулбаре.',
+                position: 'right'
+            },
+            {
+                target: '.footer-right',
+                title: '📊 Статистика',
+                description: 'В реальном времени видите количество слов, символов, время чтения и примерное число страниц.',
+                position: 'top'
+            },
+            {
+                target: '.header-right',
+                title: '⚙️ Настройки и действия',
+                description: 'Тёмная тема, история версий, полноэкранный режим, фокус и сохранение в разных форматах (HTML, DOC, TXT, Markdown).',
+                position: 'bottom'
+            },
+            {
+                target: null,
+                title: '🎉 Готово!',
+                description: 'Теперь вы знаете все возможности pieEditor. Приятной работы! Подсказку всегда можно вызвать через кнопку "?".',
+                position: 'center',
+                final: true
+            }
+        ];
+
+        this.bindEvents();
+    }
+
+    bindEvents() {
+        this.btnNext.addEventListener('click', () => this.next());
+        this.btnPrev.addEventListener('click', () => this.prev());
+        this.btnSkip.addEventListener('click', () => this.end());
+        this.btnClose.addEventListener('click', () => this.end());
+
+        document.addEventListener('keydown', (e) => {
+            if (!this.isActive) return;
+            if (e.key === 'ArrowRight' || e.key === 'Enter') this.next();
+            if (e.key === 'ArrowLeft') this.prev();
+            if (e.key === 'Escape') this.end();
+        });
+
+        window.addEventListener('resize', () => {
+            clearTimeout(this.resizeTimer);
+            this.resizeTimer = setTimeout(() => this.updatePosition(), 100);
+        });
+
+        window.addEventListener('scroll', () => {
+            if (this.isActive) this.updatePosition();
+        }, true);
+    }
+
+    start() {
+        this.currentStep = 0;
+        this.isActive = true;
+        this.overlay.classList.add('active');
+        this.showStep();
+    }
+
+    end() {
+        this.isActive = false;
+        this.overlay.classList.remove('active');
+        this.highlight.style.display = 'none';
+        localStorage.setItem('pieEditor_tour_seen', 'true');
+    }
+
+    next() {
+        if (this.currentStep < this.steps.length - 1) {
+            this.currentStep++;
+            this.showStep();
+        } else {
+            this.end();
+        }
+    }
+
+    prev() {
+        if (this.currentStep > 0) {
+            this.currentStep--;
+            this.showStep();
+        }
+    }
+
+    showStep() {
+        const step = this.steps[this.currentStep];
+        
+        this.title.textContent = step.title;
+        this.description.textContent = step.description;
+        this.stepCounter.textContent = `${this.currentStep + 1} из ${this.steps.length}`;
+        this.progressBar.style.width = `${((this.currentStep + 1) / this.steps.length) * 100}%`;
+
+        // Кнопки навигации
+        this.btnPrev.disabled = this.currentStep === 0;
+        this.btnNext.textContent = this.currentStep === this.steps.length - 1 ? '🎉 Начать!' : 'Далее →';
+        this.btnSkip.style.display = this.currentStep === this.steps.length - 1 ? 'none' : 'inline-flex';
+
+        // Финальный шаг
+        if (step.final) {
+            this.tooltip.classList.add('final');
+            this.highlight.style.display = 'none';
+            this.positionTooltip(null, 'center');
+        } else {
+            this.tooltip.classList.remove('final');
+            this.highlightElement(step.target);
+        }
+
+        // Обновление позиции
+        requestAnimationFrame(() => this.updatePosition());
+    }
+
+    highlightElement(selector) {
+        const element = document.querySelector(selector);
+        if (!element) {
+            this.highlight.style.display = 'none';
+            return;
+        }
+
+        const rect = element.getBoundingClientRect();
+        const padding = 8;
+
+        this.highlight.style.display = 'block';
+        this.highlight.style.width = `${rect.width + padding * 2}px`;
+        this.highlight.style.height = `${rect.height + padding * 2}px`;
+        this.highlight.style.left = `${rect.left - padding}px`;
+        this.highlight.style.top = `${rect.top - padding}px`;
+    }
+
+    updatePosition() {
+        const step = this.steps[this.currentStep];
+        if (step.final) {
+            this.positionTooltip(null, 'center');
+            return;
+        }
+
+        const element = document.querySelector(step.target);
+        if (!element) return;
+
+        this.highlightElement(step.target);
+        this.positionTooltip(element, step.position);
+    }
+
+    positionTooltip(element, position) {
+        const tooltipRect = this.tooltip.getBoundingClientRect();
+        const padding = 16;
+        const gap = 12;
+        let left, top;
+
+        if (position === 'center' || !element) {
+            left = (window.innerWidth - tooltipRect.width) / 2;
+            top = (window.innerHeight - tooltipRect.height) / 2;
+        } else {
+            const rect = element.getBoundingClientRect();
+
+            switch (position) {
+                case 'bottom':
+                    left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+                    top = rect.bottom + gap;
+                    break;
+                case 'top':
+                    left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+                    top = rect.top - tooltipRect.height - gap;
+                    break;
+                case 'right':
+                    left = rect.right + gap;
+                    top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+                    break;
+                case 'left':
+                    left = rect.left - tooltipRect.width - gap;
+                    top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+                    break;
+            }
+        }
+
+        // Не выходить за границы экрана
+        left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
+        top = Math.max(padding, Math.min(top, window.innerHeight - tooltipRect.height - padding));
+
+        this.tooltip.style.left = `${left}px`;
+        this.tooltip.style.top = `${top}px`;
+    }
+}
+
 class PieEditor {
     constructor() {
         this.editor = document.getElementById('editor');
@@ -15,6 +253,7 @@ class PieEditor {
         this.currentZoom = 100;
         this.isDirty = false;
         this.autoSaveTimer = null;
+        this.tour = new Tour();
         
         this.init();
     }
@@ -28,6 +267,15 @@ class PieEditor {
         this.loadFromStorage();
         this.updateCounts();
         this.updateToolbarState();
+
+        // Запуск тура при первом посещении
+        document.getElementById('btnHelp').addEventListener('click', () => {
+            this.tour.start();
+        });
+
+        if (!localStorage.getItem('pieEditor_tour_seen')) {
+            setTimeout(() => this.tour.start(), 800);
+        }
     }
 
     loadTheme() {
@@ -54,7 +302,6 @@ class PieEditor {
     }
 
     bindToolbar() {
-        // Все кнопки с data-cmd работают через единый обработчик
         document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
             btn.addEventListener('mousedown', (e) => e.preventDefault());
             btn.addEventListener('click', () => this.execCommand(btn.dataset.cmd));
@@ -135,14 +382,12 @@ class PieEditor {
 
     updateToolbarState() {
         document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
-            const cmd = btn.dataset.cmd;
-            // Не показываем активное состояние для action-кнопок (однократные действия)
             if (btn.hasAttribute('data-action')) {
                 btn.classList.remove('active');
                 return;
             }
             try {
-                btn.classList.toggle('active', document.queryCommandState(cmd));
+                btn.classList.toggle('active', document.queryCommandState(btn.dataset.cmd));
             } catch(e) {}
         });
     }
