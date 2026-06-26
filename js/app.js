@@ -1,4 +1,4 @@
-class PieOffice {
+class PieEditor {
     constructor() {
         this.editor = document.getElementById('editor');
         this.docTitle = document.getElementById('docTitle');
@@ -31,7 +31,7 @@ class PieOffice {
     }
 
     loadTheme() {
-        const theme = localStorage.getItem('pieOffice_theme') || 'light';
+        const theme = localStorage.getItem('pieEditor_theme') || 'light';
         document.documentElement.setAttribute('data-theme', theme);
         this.updateThemeIcon(theme);
     }
@@ -49,7 +49,7 @@ class PieOffice {
         const current = document.documentElement.getAttribute('data-theme');
         const next = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('pieOffice_theme', next);
+        localStorage.setItem('pieEditor_theme', next);
         this.updateThemeIcon(next);
     }
 
@@ -112,7 +112,7 @@ class PieOffice {
         document.getElementById('versionModal').addEventListener('click', (e) => { if (e.target.id === 'versionModal') document.getElementById('versionModal').classList.remove('active'); });
         document.getElementById('clearVersions').addEventListener('click', () => {
             if (confirm('Очистить всю историю версий?')) {
-                localStorage.removeItem('pieOffice_versions');
+                localStorage.removeItem('pieEditor_versions');
                 this.showVersions();
             }
         });
@@ -244,15 +244,15 @@ class PieOffice {
     }
 
     saveVersion() {
-        const versions = JSON.parse(localStorage.getItem('pieOffice_versions') || '[]');
+        const versions = JSON.parse(localStorage.getItem('pieEditor_versions') || '[]');
         versions.unshift({ id: Date.now(), title: this.docTitle.value, content: this.editor.innerHTML, date: new Date().toISOString() });
         if (versions.length > 10) versions.pop();
-        localStorage.setItem('pieOffice_versions', JSON.stringify(versions));
+        localStorage.setItem('pieEditor_versions', JSON.stringify(versions));
         this.saveModal.classList.remove('active'); alert('Версия сохранена!');
     }
 
     showVersions() {
-        const versions = JSON.parse(localStorage.getItem('pieOffice_versions') || '[]');
+        const versions = JSON.parse(localStorage.getItem('pieEditor_versions') || '[]');
         const list = document.getElementById('versionList'); list.innerHTML = '';
         if (!versions.length) list.innerHTML = '<p style="text-align:center;color:var(--text-secondary)">История пуста</p>';
         else versions.forEach(v => {
@@ -265,13 +265,13 @@ class PieOffice {
 
     restoreVersion(id) {
         if (!confirm('Восстановить эту версию?')) return;
-        const v = JSON.parse(localStorage.getItem('pieOffice_versions') || '[]').find(x => x.id === id);
+        const v = JSON.parse(localStorage.getItem('pieEditor_versions') || '[]').find(x => x.id === id);
         if (v) { this.editor.innerHTML = v.content; this.docTitle.value = v.title; this.markDirty(); this.saveToStorage(); document.getElementById('versionModal').classList.remove('active'); }
     }
 
     deleteVersion(id) {
         if (!confirm('Удалить версию?')) return;
-        localStorage.setItem('pieOffice_versions', JSON.stringify(JSON.parse(localStorage.getItem('pieOffice_versions') || '[]').filter(v => v.id !== id)));
+        localStorage.setItem('pieEditor_versions', JSON.stringify(JSON.parse(localStorage.getItem('pieEditor_versions') || '[]').filter(v => v.id !== id)));
         this.showVersions();
     }
 
@@ -323,9 +323,9 @@ class PieOffice {
         a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 
-    saveToStorage() { localStorage.setItem('pieOffice_document', JSON.stringify({ title: this.docTitle.value, content: this.editor.innerHTML, savedAt: new Date().toISOString() })); }
+    saveToStorage() { localStorage.setItem('pieEditor_document', JSON.stringify({ title: this.docTitle.value, content: this.editor.innerHTML, savedAt: new Date().toISOString() })); }
     loadFromStorage() {
-        const s = localStorage.getItem('pieOffice_document');
+        const s = localStorage.getItem('pieEditor_document');
         if (s) { try { const d = JSON.parse(s); this.docTitle.value = d.title || 'Без названия'; this.editor.innerHTML = d.content || this.editor.innerHTML; } catch(e) {} }
     }
     scheduleAutoSave() { clearTimeout(this.autoSaveTimer); this.autoSaveTimer = setTimeout(() => this.saveToStorage(), 3000); }
@@ -338,4 +338,4 @@ class PieOffice {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { window.app = new PieOffice(); });
+document.addEventListener('DOMContentLoaded', () => { window.app = new PieEditor(); });
