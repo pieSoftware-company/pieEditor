@@ -115,7 +115,6 @@ class Tour {
     }
 
     end() {
-        // Если пользователь отметил "Больше не показывать" — запоминаем
         if (this.dontShowCheckbox && this.dontShowCheckbox.checked) {
             localStorage.setItem('pieEditor_tour_disabled', 'true');
         }
@@ -125,7 +124,6 @@ class Tour {
         this.highlight.style.display = 'none';
         clearTimeout(this.resizeTimer);
         
-        // Сбрасываем чекбокс для следующего запуска
         if (this.dontShowCheckbox) {
             this.dontShowCheckbox.checked = false;
         }
@@ -281,7 +279,6 @@ class PieEditor {
             this.tour.start();
         });
 
-        // Запускаем тур автоматически, только если пользователь не отключил его
         if (!localStorage.getItem('pieEditor_tour_disabled')) {
             setTimeout(() => this.tour.start(), 800);
         }
@@ -311,11 +308,9 @@ class PieEditor {
     }
 
     bindToolbar() {
-        // Общий обработчик для всех командных кнопок (кроме createLink)
         document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
             btn.addEventListener('mousedown', (e) => e.preventDefault());
             btn.addEventListener('click', () => {
-                // createLink имеет свой специальный обработчик с prompt
                 if (btn.dataset.cmd === 'createLink') return;
                 this.execCommand(btn.dataset.cmd);
             });
@@ -327,7 +322,6 @@ class PieEditor {
         document.getElementById('textColor').addEventListener('input', (e) => this.execCommand('foreColor', e.target.value));
         document.getElementById('bgColor').addEventListener('input', (e) => this.execCommand('hiliteColor', e.target.value));
 
-        // Специальный обработчик для вставки ссылки с prompt
         document.querySelector('[data-cmd="createLink"]').addEventListener('click', () => {
             const url = prompt('Введите URL:', 'https://');
             if (url) this.execCommand('createLink', url);
@@ -408,72 +402,59 @@ class PieEditor {
     }
 
     bindKeyboard() {
-    // Перехватываем на фазе захвата — раньше браузера
-    document.addEventListener('keydown', (e) => {
-        const ctrl = e.ctrlKey || e.metaKey;
+        document.addEventListener('keydown', (e) => {
+            const ctrl = e.ctrlKey || e.metaKey;
 
-        if (ctrl) {
-            switch(e.key.toLowerCase()) {
-                case 's':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.saveToStorage();
-                    this.saveModal.classList.add('active');
-                    break;
-                case 'b':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.execCommand('bold');
-                    break;
-                case 'i':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.execCommand('italic');
-                    break;
-                case 'u':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.execCommand('underline');
-                    break;
-                case 'f':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    document.getElementById('searchModal').classList.add('active');
-                    document.getElementById('searchInput').focus();
-                    break;
-                case 'p':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.printDocument();
-                    break;
-                case 'z':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (e.shiftKey) {
+            if (ctrl) {
+                switch(e.key.toLowerCase()) {
+                    case 's':
+                        e.preventDefault();
+                        this.saveToStorage();
+                        this.saveModal.classList.add('active');
+                        return false;
+                    case 'b':
+                        e.preventDefault();
+                        this.execCommand('bold');
+                        return false;
+                    case 'i':
+                        e.preventDefault();
+                        this.execCommand('italic');
+                        return false;
+                    case 'u':
+                        e.preventDefault();
+                        this.execCommand('underline');
+                        return false;
+                    case 'f':
+                        e.preventDefault();
+                        document.getElementById('searchModal').classList.add('active');
+                        document.getElementById('searchInput').focus();
+                        return false;
+                    case 'p':
+                        e.preventDefault();
+                        this.printDocument();
+                        return false;
+                    case 'z':
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            this.execCommand('redo');
+                        } else {
+                            this.execCommand('undo');
+                        }
+                        return false;
+                    case 'y':
+                        e.preventDefault();
                         this.execCommand('redo');
-                    } else {
-                        this.execCommand('undo');
-                    }
-                    break;
-                case 'y':
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.execCommand('redo');
-                    break;
-                case 'a':
-                    // Не перехватываем — пусть браузер выделяет весь текст
-                    break;
+                        return false;
+                }
             }
-        }
 
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            e.stopPropagation();
-            document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
-            if (this.tour.isActive) this.tour.end();
-        }
-    }, true); // true = фаза захвата, обрабатываем раньше браузера
-},
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+                if (this.tour.isActive) this.tour.end();
+            }
+        }, true);
+    }
 
     bindEvents() {
         this.editor.addEventListener('input', () => { this.markDirty(); this.updateCounts(); this.scheduleAutoSave(); });
