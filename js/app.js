@@ -408,21 +408,72 @@ class PieEditor {
     }
 
     bindKeyboard() {
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key.toLowerCase()) {
-                    case 's': e.preventDefault(); this.saveToStorage(); this.saveModal.classList.add('active'); break;
-                    case 'b': e.preventDefault(); this.execCommand('bold'); break;
-                    case 'i': e.preventDefault(); this.execCommand('italic'); break;
-                    case 'u': e.preventDefault(); this.execCommand('underline'); break;
-                    case 'f': e.preventDefault(); document.getElementById('searchModal').classList.add('active'); document.getElementById('searchInput').focus(); break;
-                }
+    // Перехватываем на фазе захвата — раньше браузера
+    document.addEventListener('keydown', (e) => {
+        const ctrl = e.ctrlKey || e.metaKey;
+
+        if (ctrl) {
+            switch(e.key.toLowerCase()) {
+                case 's':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.saveToStorage();
+                    this.saveModal.classList.add('active');
+                    break;
+                case 'b':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.execCommand('bold');
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.execCommand('italic');
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.execCommand('underline');
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    document.getElementById('searchModal').classList.add('active');
+                    document.getElementById('searchInput').focus();
+                    break;
+                case 'p':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.printDocument();
+                    break;
+                case 'z':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.shiftKey) {
+                        this.execCommand('redo');
+                    } else {
+                        this.execCommand('undo');
+                    }
+                    break;
+                case 'y':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.execCommand('redo');
+                    break;
+                case 'a':
+                    // Не перехватываем — пусть браузер выделяет весь текст
+                    break;
             }
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
-            }
-        });
-    }
+        }
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+            if (this.tour.isActive) this.tour.end();
+        }
+    }, true); // true = фаза захвата, обрабатываем раньше браузера
+},
 
     bindEvents() {
         this.editor.addEventListener('input', () => { this.markDirty(); this.updateCounts(); this.scheduleAutoSave(); });
