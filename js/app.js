@@ -33,49 +33,49 @@ class Tour {
             {
                 target: '[data-cmd="bold"]',
                 title: '🎨 Форматирование текста',
-                description: 'Сделайте текст жирным, курсивом, подчёркнутым. Также доступны цвета и выравнивание. Кнопки подсвечиваются, когда формат активен.',
+                description: 'Сделайте текст жирным, курсивом, подчёркнутым. Также доступны цвета и выравнивание.',
                 position: 'bottom'
             },
             {
                 target: '[data-cmd="insertOrderedList"]',
                 title: '📋 Списки и блоки',
-                description: 'Создавайте маркированные и нумерованные списки, управляйте отступами, добавляйте цитаты и блоки кода.',
+                description: 'Создавайте маркированные и нумерованные списки, управляйте отступами.',
                 position: 'bottom'
             },
             {
                 target: '#btnInsertTable',
                 title: '🖼️ Вставка элементов',
-                description: 'Добавляйте таблицы, изображения, ссылки и горизонтальные линии. Изображения можно просто перетащить в редактор!',
+                description: 'Добавляйте таблицы, изображения, ссылки и горизонтальные линии.',
                 position: 'bottom'
             },
             {
                 target: '#btnSearch',
                 title: '🔍 Поиск и оглавление',
-                description: 'Быстрый поиск и замена текста. Автогенерация оглавления из заголовков для удобной навигации.',
+                description: 'Быстрый поиск и замена текста. Автогенерация оглавления из заголовков.',
                 position: 'bottom'
             },
             {
                 target: '.page',
                 title: '📄 Рабочая область',
-                description: 'Здесь вы редактируете документ. Всё сохраняется автоматически в браузере. Можно масштабировать через +/- в тулбаре.',
+                description: 'Здесь вы редактируете документ. Всё сохраняется автоматически в браузере.',
                 position: 'right'
             },
             {
                 target: '.footer-right',
                 title: '📊 Статистика',
-                description: 'В реальном времени видите количество слов, символов, время чтения и примерное число страниц.',
+                description: 'Количество слов, символов, время чтения и примерное число страниц.',
                 position: 'top'
             },
             {
                 target: '.header-right',
                 title: '⚙️ Настройки и действия',
-                description: 'Тёмная тема, история версий, полноэкранный режим, фокус и сохранение в разных форматах (HTML, DOC, TXT, Markdown).',
+                description: 'Тёмная тема, история версий, полноэкранный режим и сохранение в разных форматах.',
                 position: 'bottom'
             },
             {
                 target: null,
                 title: '🎉 Готово!',
-                description: 'Теперь вы знаете все возможности pieEditor. Приятной работы! Подсказку всегда можно вызвать через кнопку "?".',
+                description: 'Теперь вы знаете все возможности pieEditor. Приятной работы!',
                 position: 'center',
                 final: true
             }
@@ -328,9 +328,15 @@ class PieEditor {
         this.saveModal.addEventListener('click', (e) => { if (e.target === this.saveModal) this.saveModal.classList.remove('active'); });
 
         document.getElementById('saveHTML').addEventListener('click', () => this.saveAsHTML());
+        document.getElementById('saveDOCX').addEventListener('click', () => this.saveAsDOCX());
         document.getElementById('saveDOC').addEventListener('click', () => this.saveAsDOC());
+        document.getElementById('savePDF').addEventListener('click', () => this.saveAsPDF());
         document.getElementById('saveTXT').addEventListener('click', () => this.saveAsTXT());
+        document.getElementById('saveRTF').addEventListener('click', () => this.saveAsRTF());
         document.getElementById('saveMD').addEventListener('click', () => this.saveAsMarkdown());
+        document.getElementById('saveODT').addEventListener('click', () => this.saveAsODT());
+        document.getElementById('saveJSON').addEventListener('click', () => this.saveAsJSON());
+        document.getElementById('saveCSV').addEventListener('click', () => this.saveAsCSV());
         document.getElementById('savePrint').addEventListener('click', () => this.printDocument());
         document.getElementById('saveVersion').addEventListener('click', () => this.saveVersion());
 
@@ -424,8 +430,9 @@ class PieEditor {
         const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
-            if (file.name.endsWith('.txt')) this.editor.innerText = event.target.result;
-            else {
+            if (file.name.endsWith('.txt')) {
+                this.editor.innerText = event.target.result;
+            } else {
                 const doc = new DOMParser().parseFromString(event.target.result, 'text/html');
                 this.editor.innerHTML = doc.body.innerHTML || event.target.result;
             }
@@ -514,16 +521,72 @@ class PieEditor {
         else { document.exitFullscreen(); document.body.classList.remove('fullscreen'); }
     }
 
+    // === ЭКСПОРТ В РАЗНЫЕ ФОРМАТЫ ===
+
     saveAsHTML() {
         const t = this.docTitle.value || 'document';
         const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:'Inter',Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.7}h1{font-size:2em}h2{font-size:1.5em}blockquote{border-left:4px solid #4f46e5;padding:12px 20px;margin:1em 0;background:#eef2ff}table{border-collapse:collapse}td,th{border:1px solid #e2e8f0;padding:8px 12px}th{background:#eef2ff}img{max-width:100%}hr{border:none;border-top:2px solid #e2e8f0;margin:2em 0}</style></head><body>${this.editor.innerHTML}</body></html>`;
         this.downloadFile(`${t}.html`, html, 'text/html'); this.saveModal.classList.remove('active'); this.markClean();
     }
 
+    saveAsDOCX() {
+        const t = this.docTitle.value || 'document';
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:'Calibri',sans-serif;font-size:12pt;line-height:1.5;margin:2cm}h1{font-size:24pt}h2{font-size:18pt}h3{font-size:14pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:8px}img{max-width:100%}</style></head><body>${this.editor.innerHTML}</body></html>`;
+        
+        try {
+            const converted = htmlDocx.asBlob(html);
+            saveAs(converted, `${t}.docx`);
+            this.saveModal.classList.remove('active');
+            this.markClean();
+        } catch(e) {
+            alert('Ошибка экспорта в DOCX. Попробуйте формат .doc');
+        }
+    }
+
     saveAsDOC() {
         const t = this.docTitle.value || 'document';
-        const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:Calibri,sans-serif}table{border-collapse:collapse}td,th{border:1px solid #000;padding:5px}</style></head><body>${this.editor.innerHTML}</body></html>`;
+        const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:Calibri,sans-serif}table{border-collapse:collapse}td,th{border:1px solid #000;padding:5px}</style></head><body>${this.editor.innerHTML}</body></html>`;
         this.downloadFile(`${t}.doc`, html, 'application/msword'); this.saveModal.classList.remove('active'); this.markClean();
+    }
+
+    async saveAsPDF() {
+        const t = this.docTitle.value || 'document';
+        this.saveModal.classList.remove('active');
+        
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const element = this.editor;
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 210;
+            const pageHeight = 297;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+            
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+            
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                doc.addPage();
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+            
+            doc.save(`${t}.pdf`);
+            this.markClean();
+        } catch(e) {
+            alert('Ошибка экспорта в PDF: ' + e.message);
+        }
     }
 
     saveAsTXT() {
@@ -532,10 +595,92 @@ class PieEditor {
         this.downloadFile(`${t}.txt`, blob, 'text/plain'); this.saveModal.classList.remove('active'); this.markClean();
     }
 
+    saveAsRTF() {
+        const t = this.docTitle.value || 'document';
+        const text = this.editor.innerText.replace(/\\/g, '\\\\').replace(/{/g, '\\{').replace(/}/g, '\\}');
+        const rtf = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Calibri;}}\\f0\\fs24 ${text}}`;
+        this.downloadFile(`${t}.rtf`, rtf, 'application/rtf'); this.saveModal.classList.remove('active'); this.markClean();
+    }
+
     saveAsMarkdown() {
         const t = this.docTitle.value || 'document';
         this.downloadFile(`${t}.md`, this.htmlToMarkdown(this.editor.innerHTML), 'text/markdown');
         this.saveModal.classList.remove('active'); this.markClean();
+    }
+
+    async saveAsODT() {
+        const t = this.docTitle.value || 'document';
+        
+        try {
+            const zip = new JSZip();
+            zip.file("mimetype", "application/vnd.oasis.opendocument.text");
+            
+            const content = `<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" office:version="1.2">
+<office:body><office:text><text:p>${this.editor.innerText}</text:p></office:text></office:body>
+</office:document-content>`;
+            
+            zip.file("content.xml", content);
+            
+            const manifest = `<?xml version="1.0" encoding="UTF-8"?>
+<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0">
+<manifest:file-entry manifest:media-type="application/vnd.oasis.opendocument.text" manifest:full-path="/"/>
+<manifest:file-entry manifest:media-type="text/xml" manifest:full-path="content.xml"/>
+</manifest:manifest>`;
+            
+            zip.folder("META-INF").file("manifest.xml", manifest);
+            
+            const blob = await zip.generateAsync({ type: "blob" });
+            saveAs(blob, `${t}.odt`);
+            this.saveModal.classList.remove('active');
+            this.markClean();
+        } catch(e) {
+            alert('Ошибка экспорта в ODT: ' + e.message);
+        }
+    }
+
+    saveAsJSON() {
+        const t = this.docTitle.value || 'document';
+        const data = {
+            title: this.docTitle.value,
+            content: this.editor.innerHTML,
+            text: this.editor.innerText,
+            savedAt: new Date().toISOString(),
+            version: '1.0'
+        };
+        const json = JSON.stringify(data, null, 2);
+        this.downloadFile(`${t}.json`, json, 'application/json');
+        this.saveModal.classList.remove('active');
+        this.markClean();
+    }
+
+    saveAsCSV() {
+        const t = this.docTitle.value || 'document';
+        const tables = this.editor.querySelectorAll('table');
+        
+        if (tables.length === 0) {
+            alert('В документе нет таблиц для экспорта в CSV');
+            return;
+        }
+        
+        let csv = '';
+        tables.forEach((table, index) => {
+            if (index > 0) csv += '\n\n';
+            csv += `# Table ${index + 1}\n`;
+            
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('th, td');
+                const rowData = Array.from(cells).map(cell => {
+                    return '"' + cell.innerText.replace(/"/g, '""') + '"';
+                });
+                csv += rowData.join(',') + '\n';
+            });
+        });
+        
+        this.downloadFile(`${t}.csv`, csv, 'text/csv');
+        this.saveModal.classList.remove('active');
+        this.markClean();
     }
 
     htmlToMarkdown(html) {
