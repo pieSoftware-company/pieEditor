@@ -18,16 +18,16 @@ class Tour {
         this.resizeTimer = null;
 
         this.steps = [
-            { target: '.file-btn', title: '📁 Файл', description: 'Кнопка "Файл" открывает меню сохранения в 12 форматах. Аналог вкладки Файл в Word.', position: 'bottom' },
-            { target: '.quick-access', title: '⚡ Быстрый доступ', description: 'Кнопки быстрого доступа: сохранение, отмена и повтор действий. Всегда под рукой.', position: 'bottom' },
-            { target: '[data-tab="home"]', title: '🏠 Главная', description: 'Основная вкладка с инструментами форматирования: шрифт, абзац, стили, буфер обмена.', position: 'bottom' },
-            { target: '[data-tab="insert"]', title: '➕ Вставка', description: 'Таблицы, изображения, ссылки, колонтитулы, нумерация страниц и символы.', position: 'bottom' },
-            { target: '[data-tab="layout"]', title: '📐 Разметка', description: 'Поля, ориентация, размер страницы, колонки, водяные знаки.', position: 'bottom' },
-            { target: '[data-tab="review"]', title: '📝 Рецензирование', description: 'Проверка орфографии, примечания, отслеживание изменений, сравнение версий.', position: 'bottom' },
-            { target: '.page', title: '📄 Страница', description: 'Рабочая область в формате A4. Сверху и снизу — колонтитулы для заголовков и номеров страниц.', position: 'right' },
-            { target: '.ruler', title: '📏 Линейка', description: 'Помогает точно позиционировать элементы и настраивать отступы.', position: 'bottom' },
-            { target: '.statusbar', title: '📊 Статус', description: 'Внизу: количество слов, страниц, режим просмотра и масштаб.', position: 'top' },
-            { target: null, title: '🎉 Готово!', description: 'Вы узнали все возможности редактора. Приятной работы!', position: 'center', final: true }
+            { target: '.logo', title: '🥧 Добро пожаловать в pieEditor!', description: 'Это ваш мощный онлайн-редактор документов. Сейчас я покажу как им пользоваться.', position: 'bottom' },
+            { target: '.document-title', title: '📝 Название документа', description: 'Кликните сюда и переименуйте документ. Название используется при сохранении файлов.', position: 'bottom' },
+            { target: '[data-cmd="bold"]', title: '🎨 Форматирование текста', description: 'Сделайте текст жирным, курсивом, подчёркнутым. Также доступны цвета и выравнивание. Кнопки подсвечиваются, когда формат активен.', position: 'bottom' },
+            { target: '[data-cmd="insertOrderedList"]', title: '📋 Списки и блоки', description: 'Создавайте маркированные и нумерованные списки, управляйте отступами, добавляйте цитаты и блоки кода.', position: 'bottom' },
+            { target: '#btnInsertTable', title: '🖼️ Вставка элементов', description: 'Добавляйте таблицы, изображения, ссылки и горизонтальные линии. Изображения можно просто перетащить в редактор!', position: 'bottom' },
+            { target: '#btnSearch', title: '🔍 Поиск и оглавление', description: 'Быстрый поиск и замена текста. Автогенерация оглавления из заголовков для удобной навигации.', position: 'bottom' },
+            { target: '.page', title: '📄 Рабочая область', description: 'Здесь вы редактируете документ. Всё сохраняется автоматически в браузере. Можно масштабировать через +/- в тулбаре.', position: 'right' },
+            { target: '.footer-right', title: '📊 Статистика', description: 'В реальном времени видите количество слов, символов, время чтения и примерное число страниц.', position: 'top' },
+            { target: '.header-right', title: '⚙️ Настройки и действия', description: 'Тёмная тема, история версий, полноэкранный режим, фокус и сохранение в 12 форматах (DOCX, PDF, HTML, Markdown и др.).', position: 'bottom' },
+            { target: null, title: '🎉 Готово!', description: 'Теперь вы знаете все возможности pieEditor. Приятной работы! Подсказку всегда можно вызвать через кнопку "?".', position: 'center', final: true }
         ];
 
         this.bindEvents();
@@ -43,6 +43,10 @@ class Tour {
             clearTimeout(this.resizeTimer);
             this.resizeTimer = setTimeout(() => this.updatePosition(), 100);
         });
+
+        window.addEventListener('scroll', () => {
+            if (this.isActive) this.updatePosition();
+        }, true);
     }
 
     start() {
@@ -53,27 +57,39 @@ class Tour {
     }
 
     end() {
-        if (this.dontShowCheckbox?.checked) {
+        if (this.dontShowCheckbox && this.dontShowCheckbox.checked) {
             localStorage.setItem('pieEditor_tour_disabled', 'true');
         }
+        
         this.isActive = false;
         this.overlay.classList.remove('active');
         this.highlight.style.display = 'none';
         clearTimeout(this.resizeTimer);
-        if (this.dontShowCheckbox) this.dontShowCheckbox.checked = false;
+        
+        if (this.dontShowCheckbox) {
+            this.dontShowCheckbox.checked = false;
+        }
     }
 
     next() {
-        if (this.currentStep < this.steps.length - 1) { this.currentStep++; this.showStep(); }
-        else this.end();
+        if (this.currentStep < this.steps.length - 1) {
+            this.currentStep++;
+            this.showStep();
+        } else {
+            this.end();
+        }
     }
 
     prev() {
-        if (this.currentStep > 0) { this.currentStep--; this.showStep(); }
+        if (this.currentStep > 0) {
+            this.currentStep--;
+            this.showStep();
+        }
     }
 
     showStep() {
         const step = this.steps[this.currentStep];
+        
         this.title.textContent = step.title;
         this.description.textContent = step.description;
         this.stepCounter.textContent = `${this.currentStep + 1} из ${this.steps.length}`;
@@ -91,14 +107,20 @@ class Tour {
             this.tooltip.classList.remove('final');
             this.highlightElement(step.target);
         }
+
         requestAnimationFrame(() => this.updatePosition());
     }
 
     highlightElement(selector) {
         const element = document.querySelector(selector);
-        if (!element) { this.highlight.style.display = 'none'; return; }
+        if (!element) {
+            this.highlight.style.display = 'none';
+            return;
+        }
+
         const rect = element.getBoundingClientRect();
         const padding = 8;
+
         this.highlight.style.display = 'block';
         this.highlight.style.width = `${rect.width + padding * 2}px`;
         this.highlight.style.height = `${rect.height + padding * 2}px`;
@@ -108,31 +130,56 @@ class Tour {
 
     updatePosition() {
         const step = this.steps[this.currentStep];
-        if (step.final) { this.positionTooltip(null, 'center'); return; }
+        if (step.final) {
+            this.positionTooltip(null, 'center');
+            return;
+        }
+
         const element = document.querySelector(step.target);
-        if (!element) { this.highlight.style.display = 'none'; return; }
+        if (!element) {
+            this.highlight.style.display = 'none';
+            return;
+        }
+
         this.highlightElement(step.target);
         this.positionTooltip(element, step.position);
     }
 
     positionTooltip(element, position) {
         const tooltipRect = this.tooltip.getBoundingClientRect();
-        const padding = 16, gap = 12;
+        const padding = 16;
+        const gap = 12;
         let left, top;
+
         if (position === 'center' || !element) {
             left = (window.innerWidth - tooltipRect.width) / 2;
             top = (window.innerHeight - tooltipRect.height) / 2;
         } else {
             const rect = element.getBoundingClientRect();
+
             switch (position) {
-                case 'bottom': left = rect.left + rect.width / 2 - tooltipRect.width / 2; top = rect.bottom + gap; break;
-                case 'top': left = rect.left + rect.width / 2 - tooltipRect.width / 2; top = rect.top - tooltipRect.height - gap; break;
-                case 'right': left = rect.right + gap; top = rect.top + rect.height / 2 - tooltipRect.height / 2; break;
-                case 'left': left = rect.left - tooltipRect.width - gap; top = rect.top + rect.height / 2 - tooltipRect.height / 2; break;
+                case 'bottom':
+                    left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+                    top = rect.bottom + gap;
+                    break;
+                case 'top':
+                    left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+                    top = rect.top - tooltipRect.height - gap;
+                    break;
+                case 'right':
+                    left = rect.right + gap;
+                    top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+                    break;
+                case 'left':
+                    left = rect.left - tooltipRect.width - gap;
+                    top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+                    break;
             }
         }
+
         left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
         top = Math.max(padding, Math.min(top, window.innerHeight - tooltipRect.height - padding));
+
         this.tooltip.style.left = `${left}px`;
         this.tooltip.style.top = `${top}px`;
     }
@@ -142,36 +189,35 @@ class PieEditor {
     constructor() {
         this.editor = document.getElementById('editor');
         this.docTitle = document.getElementById('docTitle');
+        this.statusDot = document.querySelector('.status-dot');
         this.statusText = document.getElementById('statusText');
         this.wordCount = document.getElementById('wordCount');
         this.charCount = document.getElementById('charCount');
+        this.readTime = document.getElementById('readTime');
         this.pageCount = document.getElementById('pageCount');
         this.saveModal = document.getElementById('saveModal');
         this.fileInput = document.getElementById('fileInput');
         this.imageInput = document.getElementById('imageInput');
         this.zoomValue = document.getElementById('zoomValue');
-        this.zoomSlider = document.getElementById('zoomSlider');
         this.currentZoom = 100;
         this.isDirty = false;
         this.autoSaveTimer = null;
-        this.currentFormat = 'docx';
-        this.comments = [];
-        this.trackingEnabled = false;
+        this.currentFormat = 'html';
         this.tour = new Tour();
 
         this.formatInfo = {
-            docx: { title: 'Word (.docx)', desc: 'Современный формат Microsoft Word с полным сохранением форматирования, таблиц и изображений' },
-            pdf: { title: 'PDF', desc: 'Универсальный формат для печати и обмена документами. Выглядит одинаково везде' },
-            html: { title: 'HTML', desc: 'Веб-страница со встроенными стилями. Открывается в любом браузере' },
-            doc: { title: 'Word 97 (.doc)', desc: 'Классический формат Word. Совместим со старыми версиями Office' },
-            txt: { title: 'TXT (UTF-8)', desc: 'Чистый текст с BOM-маркером для корректного отображения кириллицы' },
-            rtf: { title: 'RTF', desc: 'Rich Text Format — универсальный формат с базовым форматированием' },
-            md: { title: 'Markdown', desc: 'Идеально для GitHub, документации и блогов' },
-            odt: { title: 'ODT', desc: 'OpenDocument Text для LibreOffice и OpenOffice' },
-            json: { title: 'JSON', desc: 'Полный бэкап документа со всей структурой для резервного копирования' },
-            csv: { title: 'CSV', desc: 'Экспорт всех таблиц из документа для Excel и Google Sheets' },
-            print: { title: 'Печать', desc: 'Прямая печать через браузер. Можно сохранить как PDF через диалог печати' },
-            version: { title: 'Сохранить в историю', desc: 'Сохраните текущую версию в истории. Можно вернуться к ней в любой момент' }
+            html: { title: 'HTML', desc: 'Веб-страница со встроенными стилями. Открывается в любом браузере.' },
+            docx: { title: 'Word (.docx)', desc: 'Современный формат Microsoft Word с полным сохранением форматирования.' },
+            doc: { title: 'Word (.doc)', desc: 'Классический формат Word. Совместим со старыми версиями Office.' },
+            pdf: { title: 'PDF', desc: 'Универсальный формат для печати и обмена. Выглядит одинаково на любом устройстве.' },
+            txt: { title: 'TXT (UTF-8)', desc: 'Чистый текст с BOM-маркером для корректного отображения кириллицы.' },
+            rtf: { title: 'RTF', desc: 'Rich Text Format — универсальный формат с базовым форматированием.' },
+            md: { title: 'Markdown', desc: 'Идеально для GitHub, документации и блогов.' },
+            odt: { title: 'ODT', desc: 'OpenDocument Text для LibreOffice и OpenOffice.' },
+            json: { title: 'JSON', desc: 'Полный бэкап документа со всей структурой для резервного копирования.' },
+            csv: { title: 'CSV', desc: 'Экспорт всех таблиц из документа для Excel и Google Sheets.' },
+            print: { title: 'Печать / PDF', desc: 'Прямая печать через браузер. Можно сохранить как PDF через диалог печати.' },
+            version: { title: 'Сохранить в историю', desc: 'Сохраните текущую версию в историю. Можно вернуться к ней в любой момент.' }
         };
 
         this.init();
@@ -179,17 +225,18 @@ class PieEditor {
 
     init() {
         this.loadTheme();
-        this.bindRibbonTabs();
-        this.bindFileMenu();
         this.bindToolbar();
+        this.bindFileMenu();
         this.bindEvents();
         this.bindDragDrop();
-        this.bindStatusBar();
         this.loadFromStorage();
         this.updateCounts();
         this.updateToolbarState();
 
-        document.getElementById('btnHelp').addEventListener('click', () => this.tour.start());
+        document.getElementById('btnHelp').addEventListener('click', () => {
+            this.tour.start();
+        });
+
         if (!localStorage.getItem('pieEditor_tour_disabled')) {
             setTimeout(() => this.tour.start(), 800);
         }
@@ -198,6 +245,16 @@ class PieEditor {
     loadTheme() {
         const theme = localStorage.getItem('pieEditor_theme') || 'light';
         document.documentElement.setAttribute('data-theme', theme);
+        this.updateThemeIcon(theme);
+    }
+
+    updateThemeIcon(theme) {
+        const icon = document.querySelector('#themeToggle svg');
+        if (theme === 'dark') {
+            icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        } else {
+            icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        }
     }
 
     toggleTheme() {
@@ -205,23 +262,13 @@ class PieEditor {
         const next = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('pieEditor_theme', next);
-    }
-
-    bindRibbonTabs() {
-        document.querySelectorAll('.ribbon-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.ribbon-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.ribbon-panel').forEach(p => p.classList.remove('active'));
-                tab.classList.add('active');
-                document.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.add('active');
-            });
-        });
+        this.updateThemeIcon(next);
     }
 
     bindFileMenu() {
-        document.getElementById('fileBtn').addEventListener('click', () => {
+        document.getElementById('btnSave').addEventListener('click', () => {
             this.saveModal.classList.add('active');
-            this.selectFormat('docx');
+            this.selectFormat('html');
         });
 
         document.getElementById('closeSaveModal').addEventListener('click', () => this.saveModal.classList.remove('active'));
@@ -245,10 +292,10 @@ class PieEditor {
 
     saveCurrentFormat() {
         const fn = {
-            docx: () => this.saveAsDOCX(),
-            pdf: () => this.saveAsPDF(),
             html: () => this.saveAsHTML(),
+            docx: () => this.saveAsDOCX(),
             doc: () => this.saveAsDOC(),
+            pdf: () => this.saveAsPDF(),
             txt: () => this.saveAsTXT(),
             rtf: () => this.saveAsRTF(),
             md: () => this.saveAsMarkdown(),
@@ -262,161 +309,68 @@ class PieEditor {
     }
 
     bindToolbar() {
-        // Ribbon commands
-        document.querySelectorAll('.ribbon-btn[data-cmd]').forEach(btn => {
+        document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
             btn.addEventListener('mousedown', (e) => e.preventDefault());
             btn.addEventListener('click', () => {
-                const cmd = btn.dataset.cmd;
-                if (cmd === 'createLink') {
-                    const url = prompt('URL:', 'https://');
-                    if (url) this.execCommand('createLink', url);
-                } else {
-                    this.execCommand(cmd, btn.dataset.value || null);
-                }
+                if (btn.dataset.cmd === 'createLink') return;
+                this.execCommand(btn.dataset.cmd);
             });
         });
 
-        // Selects
         document.getElementById('fontFamily').addEventListener('change', (e) => this.execCommand('fontName', e.target.value));
         document.getElementById('fontSize').addEventListener('change', (e) => this.execCommand('fontSize', e.target.value));
         document.getElementById('formatBlock').addEventListener('change', (e) => this.execCommand('formatBlock', `<${e.target.value}>`));
-        document.getElementById('textColor').addEventListener('input', (e) => {
-            document.getElementById('fgBar').style.background = e.target.value;
-            this.execCommand('foreColor', e.target.value);
-        });
-        document.getElementById('bgColor').addEventListener('input', (e) => {
-            document.getElementById('bgBar').style.background = e.target.value;
-            this.execCommand('hiliteColor', e.target.value);
+        document.getElementById('textColor').addEventListener('input', (e) => this.execCommand('foreColor', e.target.value));
+        document.getElementById('bgColor').addEventListener('input', (e) => this.execCommand('hiliteColor', e.target.value));
+
+        document.querySelector('[data-cmd="createLink"]').addEventListener('click', () => {
+            const url = prompt('Введите URL:', 'https://');
+            if (url) this.execCommand('createLink', url);
         });
 
-        // Insert buttons
         document.getElementById('btnInsertImage').addEventListener('click', () => this.imageInput.click());
         document.getElementById('btnInsertTable').addEventListener('click', () => this.insertTable());
         document.getElementById('btnInsertHR').addEventListener('click', () => this.execCommand('insertHTML', '<hr>'));
-        document.getElementById('btnPageBreak').addEventListener('click', () => this.execCommand('insertHTML', '<div style="page-break-after:always;border-top:2px dashed #999;margin:20px 0"></div>'));
-        document.getElementById('btnTOC').addEventListener('click', () => this.showTOC());
 
-        // Layout
-        document.getElementById('btnOrientation').addEventListener('click', () => {
-            const page = document.querySelector('.page');
-            const current = page.style.getPropertyValue('--orientation') || 'portrait';
-            if (current === 'portrait') {
-                page.style.maxWidth = '1123px';
-                page.style.minHeight = '794px';
-                page.style.setProperty('--orientation', 'landscape');
-            } else {
-                page.style.maxWidth = '794px';
-                page.style.minHeight = '1123px';
-                page.style.setProperty('--orientation', 'portrait');
-            }
-        });
-
-        document.getElementById('btnWatermark').addEventListener('click', () => {
-            const text = prompt('Текст водяного знака:', 'ЧЕРНОВИК');
-            if (text) {
-                let wm = document.getElementById('watermark');
-                if (!wm) {
-                    wm = document.createElement('div');
-                    wm.id = 'watermark';
-                    wm.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:80pt;color:rgba(0,0,0,0.1);pointer-events:none;z-index:0;font-weight:bold;white-space:nowrap';
-                    this.editor.appendChild(wm);
-                }
-                wm.textContent = text;
-            }
-        });
-
-        // Review
-        document.getElementById('btnNewComment').addEventListener('click', () => this.addComment());
-        document.getElementById('btnTrackChanges').addEventListener('click', () => {
-            this.trackingEnabled = !this.trackingEnabled;
-            document.getElementById('btnTrackChanges').classList.toggle('active', this.trackingEnabled);
-            alert(this.trackingEnabled ? 'Отслеживание включено' : 'Отслеживание выключено');
-        });
-        document.getElementById('btnWordCount').addEventListener('click', () => {
-            const text = this.editor.innerText.trim();
-            const words = text ? text.split(/\s+/).length : 0;
-            const chars = text.length;
-            const paragraphs = text ? text.split(/\n\n+/).length : 0;
-            alert(`Слов: ${words}\nСимволов (с пробелами): ${chars}\nСимволов (без пробелов): ${text.replace(/\s/g, '').length}\nАбзацев: ${paragraphs}\nВремя чтения: ${Math.ceil(words / 200)} мин`);
-        });
-        document.getElementById('btnCompare').addEventListener('click', () => {
-            alert('Функция сравнения документов. В полной версии можно будет загрузить второй файл для сравнения.');
-        });
-
-        // View
+        document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+        document.getElementById('btnFullscreen').addEventListener('click', () => this.toggleFullscreen());
         document.getElementById('btnFocus').addEventListener('click', () => document.body.classList.toggle('focus-mode'));
-        document.getElementById('btnFullscreen').addEventListener('click', () => {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
-        });
-        document.getElementById('showRuler').addEventListener('change', (e) => {
-            document.getElementById('ruler').classList.toggle('hidden', !e.target.checked);
-        });
 
-        // Search
         document.getElementById('btnSearch').addEventListener('click', () => {
             document.getElementById('searchModal').classList.add('active');
             document.getElementById('searchInput').focus();
         });
-        document.getElementById('btnReplace').addEventListener('click', () => {
-            document.getElementById('searchModal').classList.add('active');
-            document.getElementById('searchInput').focus();
-        });
         document.getElementById('closeSearchModal').addEventListener('click', () => document.getElementById('searchModal').classList.remove('active'));
-        document.getElementById('searchModal').addEventListener('click', (e) => { if (e.target.id === 'searchModal') e.currentTarget.classList.remove('active'); });
+        document.getElementById('searchModal').addEventListener('click', (e) => { if (e.target.id === 'searchModal') document.getElementById('searchModal').classList.remove('active'); });
         document.getElementById('searchNext').addEventListener('click', () => this.findNext());
         document.getElementById('searchPrev').addEventListener('click', () => this.findPrev());
         document.getElementById('replaceBtn').addEventListener('click', () => this.replaceText());
         document.getElementById('replaceAllBtn').addEventListener('click', () => this.replaceAll());
 
-        // Versions
+        document.getElementById('btnTOC').addEventListener('click', () => this.showTOC());
+        document.getElementById('closeTocModal').addEventListener('click', () => document.getElementById('tocModal').classList.remove('active'));
+        document.getElementById('tocModal').addEventListener('click', (e) => { if (e.target.id === 'tocModal') document.getElementById('tocModal').classList.remove('active'); });
+
         document.getElementById('btnVersions').addEventListener('click', () => this.showVersions());
         document.getElementById('closeVersionModal').addEventListener('click', () => document.getElementById('versionModal').classList.remove('active'));
-        document.getElementById('versionModal').addEventListener('click', (e) => { if (e.target.id === 'versionModal') e.currentTarget.classList.remove('active'); });
+        document.getElementById('versionModal').addEventListener('click', (e) => { if (e.target.id === 'versionModal') document.getElementById('versionModal').classList.remove('active'); });
         document.getElementById('clearVersions').addEventListener('click', () => {
-            if (confirm('Очистить историю версий?')) {
+            if (confirm('Очистить всю историю версий?')) {
                 localStorage.removeItem('pieEditor_versions');
                 this.showVersions();
             }
         });
 
-        // Zoom
-        document.getElementById('btnZoomIn').addEventListener('click', () => this.setZoom(this.currentZoom + 10));
-        document.getElementById('btnZoomOut').addEventListener('click', () => this.setZoom(this.currentZoom - 10));
-        document.getElementById('zoom100').addEventListener('click', () => this.setZoom(100));
-        document.getElementById('zoomSlider').addEventListener('input', (e) => this.setZoom(parseInt(e.target.value)));
-        document.getElementById('zoomIn').addEventListener('click', () => this.setZoom(this.currentZoom + 10));
-        document.getElementById('zoomOut').addEventListener('click', () => this.setZoom(this.currentZoom - 10));
+        document.getElementById('zoomIn').addEventListener('click', () => { this.currentZoom = Math.min(200, this.currentZoom + 10); this.applyZoom(); });
+        document.getElementById('zoomOut').addEventListener('click', () => { this.currentZoom = Math.max(50, this.currentZoom - 10); this.applyZoom(); });
 
-        // Theme
-        document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
-
-        // Line spacing
-        document.getElementById('btnLineSpacing').addEventListener('click', () => {
-            const spacing = prompt('Межстрочный интервал (1, 1.15, 1.5, 2, 2.5, 3):', '1.15');
-            if (spacing) {
-                document.execCommand('styleWithCSS', false, true);
-                document.execCommand('insertHTML', false, `<span style="line-height:${spacing}">${window.getSelection().toString() || 'текст'}</span>`);
-            }
-        });
-
-        // Symbols
-        document.getElementById('btnSymbol').addEventListener('click', () => {
-            const symbol = prompt('Введите символ:', '©');
-            if (symbol) this.execCommand('insertHTML', symbol);
-        });
-        document.getElementById('btnEquation').addEventListener('click', () => {
-            const eq = prompt('Уравнение:', 'x² + y² = z²');
-            if (eq) this.execCommand('insertHTML', `<span style="font-family:serif;font-style:italic">${eq}</span>`);
-        });
+        document.getElementById('btnOpen').addEventListener('click', () => this.fileInput.click());
     }
 
-    setZoom(value) {
-        this.currentZoom = Math.max(50, Math.min(200, value));
+    applyZoom() {
         this.editor.style.transform = `scale(${this.currentZoom / 100})`;
         this.editor.style.transformOrigin = 'top center';
         this.zoomValue.textContent = `${this.currentZoom}%`;
-        this.zoomSlider.value = this.currentZoom;
     }
 
     execCommand(cmd, value = null) {
@@ -427,10 +381,13 @@ class PieEditor {
     }
 
     updateToolbarState() {
-        document.querySelectorAll('.ribbon-btn[data-cmd]').forEach(btn => {
-            const cmd = btn.dataset.cmd;
+        document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
+            if (btn.hasAttribute('data-action')) {
+                btn.classList.remove('active');
+                return;
+            }
             try {
-                btn.classList.toggle('active', document.queryCommandState(cmd));
+                btn.classList.toggle('active', document.queryCommandState(btn.dataset.cmd));
             } catch(e) {}
         });
     }
@@ -456,30 +413,9 @@ class PieEditor {
         });
     }
 
-    bindStatusBar() {
-        document.getElementById('viewPrint')?.addEventListener('click', () => this.setView('print'));
-        document.getElementById('viewRead')?.addEventListener('click', () => this.setView('read'));
-        document.getElementById('viewWeb')?.addEventListener('click', () => this.setView('web'));
-    }
-
-    setView(mode) {
-        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`view${mode.charAt(0).toUpperCase() + mode.slice(1)}`)?.classList.add('active');
-        if (mode === 'read') {
-            this.editor.style.padding = '40px';
-            this.editor.style.maxWidth = '600px';
-        } else if (mode === 'web') {
-            this.editor.style.padding = '40px';
-            this.editor.style.maxWidth = 'none';
-        } else {
-            this.editor.style.padding = '96px 72px';
-            this.editor.style.maxWidth = '794px';
-        }
-    }
-
     handleImageFile(file) {
         const reader = new FileReader();
-        reader.onload = (e) => this.execCommand('insertHTML', `<img src="${e.target.result}" alt="image" style="max-width:100%">`);
+        reader.onload = (e) => this.execCommand('insertHTML', `<img src="${e.target.result}" alt="image" style="max-width:100%;">`);
         reader.readAsDataURL(file);
     }
 
@@ -487,9 +423,8 @@ class PieEditor {
         const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
-            if (file.name.endsWith('.txt')) {
-                this.editor.innerText = event.target.result;
-            } else {
+            if (file.name.endsWith('.txt')) this.editor.innerText = event.target.result;
+            else {
                 const doc = new DOMParser().parseFromString(event.target.result, 'text/html');
                 this.editor.innerHTML = doc.body.innerHTML || event.target.result;
             }
@@ -502,25 +437,15 @@ class PieEditor {
     handleImageInsert(e) { if (e.target.files[0]) this.handleImageFile(e.target.files[0]); this.imageInput.value = ''; }
 
     insertTable() {
-        const rows = parseInt(prompt('Строки:', '3'));
-        const cols = parseInt(prompt('Столбцы:', '3'));
+        const rows = prompt('Количество строк:', '3'); const cols = prompt('Количество столбцов:', '3');
         if (!rows || !cols) return;
         let table = '<table>';
-        for (let i = 0; i < rows; i++) {
+        for (let i = 0; i < parseInt(rows); i++) {
             table += '<tr>';
-            for (let j = 0; j < cols; j++) table += i === 0 ? '<th>&nbsp;</th>' : '<td>&nbsp;</td>';
+            for (let j = 0; j < parseInt(cols); j++) table += i === 0 ? '<th>&nbsp;</th>' : '<td>&nbsp;</td>';
             table += '</tr>';
         }
-        table += '</table><p><br></p>';
-        this.execCommand('insertHTML', table);
-    }
-
-    addComment() {
-        const text = prompt('Комментарий:');
-        if (!text) return;
-        const id = 'c' + Date.now();
-        this.execCommand('insertHTML', `<span class="comment" data-id="${id}" style="background:#fff3cd;border-bottom:2px solid #ffc107;cursor:pointer" title="${text}">${window.getSelection().toString() || '⚠'}</span>`);
-        this.comments.push({ id, text });
+        this.execCommand('insertHTML', table + '</table><p><br></p>');
     }
 
     findNext() { const s = document.getElementById('searchInput').value; if (s) window.find(s, false, false, true); }
@@ -541,17 +466,13 @@ class PieEditor {
     showTOC() {
         const headings = this.editor.querySelectorAll('h1, h2, h3, h4');
         const tocList = document.getElementById('tocList'); tocList.innerHTML = '';
-        if (headings.length === 0) {
-            tocList.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Заголовки не найдены</p>';
-        } else {
-            headings.forEach(h => {
-                const li = document.createElement('li');
-                li.className = `toc-item toc-item-${h.tagName.toLowerCase()}`;
-                li.textContent = h.textContent;
-                li.onclick = () => { h.scrollIntoView({ behavior: 'smooth' }); document.getElementById('tocModal').classList.remove('active'); };
-                tocList.appendChild(li);
-            });
-        }
+        headings.forEach(h => {
+            const li = document.createElement('li');
+            li.className = `toc-item toc-item-${h.tagName.toLowerCase()}`;
+            li.textContent = h.textContent;
+            li.onclick = () => { h.scrollIntoView({ behavior: 'smooth' }); document.getElementById('tocModal').classList.remove('active'); };
+            tocList.appendChild(li);
+        });
         document.getElementById('tocModal').classList.add('active');
     }
 
@@ -566,10 +487,10 @@ class PieEditor {
     showVersions() {
         const versions = JSON.parse(localStorage.getItem('pieEditor_versions') || '[]');
         const list = document.getElementById('versionList'); list.innerHTML = '';
-        if (!versions.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">История пуста</p>';
+        if (!versions.length) list.innerHTML = '<p style="text-align:center;color:var(--text-secondary)">История пуста</p>';
         else versions.forEach(v => {
             const item = document.createElement('div'); item.className = 'version-item';
-            item.innerHTML = `<div><div class="version-title">${v.title}</div><div class="version-date">${new Date(v.date).toLocaleString('ru-RU')}</div></div><div><button class="version-btn" onclick="app.restoreVersion(${v.id})">Восстановить</button> <button class="version-btn" onclick="app.deleteVersion(${v.id})">Удалить</button></div>`;
+            item.innerHTML = `<div class="version-info"><div class="version-title">${v.title}</div><div class="version-date">${new Date(v.date).toLocaleString('ru-RU')}</div></div><div class="version-actions"><button class="version-btn" onclick="app.restoreVersion(${v.id})">Восстановить</button><button class="version-btn" onclick="app.deleteVersion(${v.id})">Удалить</button></div>`;
             list.appendChild(item);
         });
         document.getElementById('versionModal').classList.add('active');
@@ -587,32 +508,37 @@ class PieEditor {
         this.showVersions();
     }
 
-    // === EXPORTS ===
+    toggleFullscreen() {
+        if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); document.body.classList.add('fullscreen'); }
+        else { document.exitFullscreen(); document.body.classList.remove('fullscreen'); }
+    }
+
+    // === ЭКСПОРТ ===
+
     saveAsHTML() {
         const t = this.docTitle.value || 'document';
-        const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:Calibri,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.5}h1{font-size:24pt;color:#2b579a}h2{font-size:16pt;color:#2b579a}blockquote{border-left:4px solid #2b579a;padding:8px 16px;background:#d1dff4;font-style:italic}table{border-collapse:collapse}td,th{border:1px solid #c8c6c4;padding:6px 10px}th{background:#d1dff4}img{max-width:100%}</style></head><body>${this.editor.innerHTML}</body></html>`;
+        const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:'Inter',Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.7}h1{font-size:2em}h2{font-size:1.5em}blockquote{border-left:4px solid #4f46e5;padding:12px 20px;margin:1em 0;background:#eef2ff}table{border-collapse:collapse}td,th{border:1px solid #e2e8f0;padding:8px 12px}th{background:#eef2ff}img{max-width:100%}hr{border:none;border-top:2px solid #e2e8f0;margin:2em 0}</style></head><body>${this.editor.innerHTML}</body></html>`;
         this.downloadFile(`${t}.html`, html, 'text/html'); this.saveModal.classList.remove('active'); this.markClean();
     }
 
     saveAsDOCX() {
         const t = this.docTitle.value || 'document';
-        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.15}h1{font-size:24pt;color:#2b579a}h2{font-size:16pt;color:#2b579a}table{border-collapse:collapse}td,th{border:1px solid black;padding:6px}</style></head><body>${this.editor.innerHTML}</body></html>`;
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:'Calibri',sans-serif;font-size:12pt;line-height:1.5;margin:2cm}h1{font-size:24pt}h2{font-size:18pt}h3{font-size:14pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:8px}img{max-width:100%}</style></head><body>${this.editor.innerHTML}</body></html>`;
         try {
             if (typeof htmlDocx !== 'undefined') {
                 const blob = htmlDocx.asBlob(html);
                 saveAs(blob, `${t}.docx`);
             } else {
-                // Fallback — используем MIME hack
                 const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
                 saveAs(blob, `${t}.docx`);
             }
             this.saveModal.classList.remove('active'); this.markClean();
-        } catch(e) { alert('Ошибка: ' + e.message); }
+        } catch(e) { alert('Ошибка DOCX: ' + e.message); }
     }
 
     saveAsDOC() {
         const t = this.docTitle.value || 'document';
-        const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="UTF-8"><title>${t}</title></head><body>${this.editor.innerHTML}</body></html>`;
+        const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="UTF-8"><title>${t}</title><style>body{font-family:Calibri,sans-serif}table{border-collapse:collapse}td,th{border:1px solid #000;padding:5px}</style></head><body>${this.editor.innerHTML}</body></html>`;
         this.downloadFile(`${t}.doc`, html, 'application/msword'); this.saveModal.classList.remove('active'); this.markClean();
     }
 
@@ -648,7 +574,7 @@ class PieEditor {
     saveAsRTF() {
         const t = this.docTitle.value || 'document';
         const text = this.editor.innerText.replace(/\\/g, '\\\\').replace(/{/g, '\\{').replace(/}/g, '\\}');
-        const rtf = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Calibri;}}\\f0\\fs22 ${text}}`;
+        const rtf = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Calibri;}}\\f0\\fs24 ${text}}`;
         this.downloadFile(`${t}.rtf`, rtf, 'application/rtf'); this.saveModal.classList.remove('active'); this.markClean();
     }
 
@@ -675,15 +601,16 @@ class PieEditor {
 
     saveAsJSON() {
         const t = this.docTitle.value || 'document';
-        const data = { title: this.docTitle.value, content: this.editor.innerHTML, text: this.editor.innerText, savedAt: new Date().toISOString(), version: '2.0' };
-        this.downloadFile(`${t}.json`, JSON.stringify(data, null, 2), 'application/json');
+        const data = { title: this.docTitle.value, content: this.editor.innerHTML, text: this.editor.innerText, savedAt: new Date().toISOString(), version: '1.0' };
+        const json = JSON.stringify(data, null, 2);
+        this.downloadFile(`${t}.json`, json, 'application/json');
         this.saveModal.classList.remove('active'); this.markClean();
     }
 
     saveAsCSV() {
         const t = this.docTitle.value || 'document';
         const tables = this.editor.querySelectorAll('table');
-        if (tables.length === 0) { alert('Нет таблиц для экспорта'); return; }
+        if (tables.length === 0) { alert('В документе нет таблиц для экспорта в CSV'); return; }
         let csv = '';
         tables.forEach((table, i) => {
             if (i > 0) csv += '\n\n';
@@ -693,16 +620,17 @@ class PieEditor {
                 csv += cells.join(',') + '\n';
             });
         });
-        this.downloadFile(`${t}.csv`, csv, 'text/csv'); this.saveModal.classList.remove('active'); this.markClean();
+        this.downloadFile(`${t}.csv`, csv, 'text/csv');
+        this.saveModal.classList.remove('active'); this.markClean();
     }
 
     htmlToMarkdown(html) {
         let md = html;
         md = md.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n').replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n').replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n').replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n\n');
-        md = md.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**').replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*').replace(/<u[^>]*>(.*?)<\/u>/gi, '__$1__');
+        md = md.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**').replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*').replace(/<u[^>]*>(.*?)<\/u>/gi, '__$1__');
         md = md.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (_, c) => c.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n'));
         md = md.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_, c) => { let i=1; return c.replace(/<li[^>]*>(.*?)<\/li>/gi, (_, t) => `${i++}. ${t}\n`); });
-        md = md.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+        md = md.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)').replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*\/?>/gi, '![$2]($1)');
         md = md.replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1\n\n').replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, '```\n$1\n```\n\n').replace(/<hr[^>]*\/?>/gi, '---\n\n').replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
         return md.replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim();
     }
@@ -718,15 +646,15 @@ class PieEditor {
     saveToStorage() { localStorage.setItem('pieEditor_document', JSON.stringify({ title: this.docTitle.value, content: this.editor.innerHTML, savedAt: new Date().toISOString() })); }
     loadFromStorage() {
         const s = localStorage.getItem('pieEditor_document');
-        if (s) { try { const d = JSON.parse(s); this.docTitle.value = d.title || 'Документ1'; this.editor.innerHTML = d.content || this.editor.innerHTML; } catch(e) {} }
+        if (s) { try { const d = JSON.parse(s); this.docTitle.value = d.title || 'Без названия'; this.editor.innerHTML = d.content || this.editor.innerHTML; } catch(e) {} }
     }
     scheduleAutoSave() { clearTimeout(this.autoSaveTimer); this.autoSaveTimer = setTimeout(() => this.saveToStorage(), 3000); }
-    markDirty() { this.isDirty = true; this.statusText.textContent = '● Не сохранено'; this.statusText.style.color = '#ffc107'; }
-    markClean() { this.isDirty = false; this.statusText.textContent = '✓ Сохранено'; this.statusText.style.color = ''; this.saveToStorage(); }
+    markDirty() { this.isDirty = true; this.statusDot.className = 'status-dot unsaved'; this.statusText.textContent = 'Не сохранено'; }
+    markClean() { this.isDirty = false; this.statusDot.className = 'status-dot saved'; this.statusText.textContent = 'Сохранено'; this.saveToStorage(); }
     updateCounts() {
         const t = this.editor.innerText.trim(), w = t ? t.split(/\s+/).length : 0, c = t.length;
-        this.wordCount.textContent = w; this.charCount.textContent = c;
-        this.pageCount.textContent = Math.ceil(w / 250) || 1;
+        this.wordCount.textContent = `Слов: ${w}`; this.charCount.textContent = `Символов: ${c}`;
+        this.readTime.textContent = `Время чтения: ${Math.ceil(w / 200)} мин`; this.pageCount.textContent = `Страниц: ~${Math.ceil(w / 250)}`;
     }
 }
 
